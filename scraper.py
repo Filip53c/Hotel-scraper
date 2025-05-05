@@ -1,103 +1,66 @@
-
-from datetime import datetime
 from playwright.sync_api import sync_playwright
 import pandas as pd
+from datetime import datetime
 
 def get_valid_date(prompt):
     while True:
-        user_input = input(prompt)
+        user_input = input(prompt).strip()
         try:
-            date_obj = datetime.strptime(user_input, '%d-%m-%Y')
-            return date_obj.strftime('%Y-%m-%d')
+            datetime.strptime(user_input, '%d-%m-%Y')
+            return user_input
         except ValueError:
-            print("Invalid format. Please enter the date as DD-MM-YYYY (e.g. 23-06-2025).")
+            print("Invalid format. Please use dd-MM-YYYY.")
 
 def main():
-    city = input("Enter city (e.g. Tokyo, Osaka, Kyoto): ").strip()
-    checkin = get_valid_date("Enter check-in date (DD-MM-YYYY): ")
-    checkout = get_valid_date("Enter check-out date (DD-MM-YYYY): ")
+    city = input("Enter city (e.g. Paris, Tokyo, Belgrade): ").strip()
+    checkin_date = get_valid_date("Enter check-in date (DD-MM-YYYY): ")
+    checkout_date = get_valid_date("Enter check-out date (DD-MM-YYYY): ")
 
-    url = (
-        f'https://www.booking.com/searchresults.en-gb.html?'
-        f'ss={city}&ssne={city}&ssne_untouched={city}'
-        f'&checkin={checkin}&checkout={checkout}'
-        f'&group_adults=2&group_children=0&no_rooms=1'
-        f'&dest_type=city&selected_currency=USD'
+    page_url = (
+        f'https://www.booking.com/searchresults.en-us.html'
+        f'?checkin={checkin_date}&checkout={checkout_date}'
+        f'&selected_currency=EUR&ss={city}&ssne={city}&ssne_untouched={city}'
+        f'&lang=en-us&sb=1&src_elem=sb&src=searchresults'
+        f'&dest_type=city&group_adults=1&no_rooms=1&group_children=0&sb_travel_purpose=leisure'
     )
-
-    print(f"\nCity: {city}")
-    print(f"Check-in: {checkin}")
-    print(f"Check-out: {checkout}")
-    print(f"Booking URL:\n{url}\n")
-
-    hotels_list = []
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
-        page.goto(url, timeout=60000)
+        page.goto(page_url, timeout=60000)
 
         hotels = page.locator('[data-testid="property-card"]').all()
-        print(f"Found {len(hotels)} hotels.")
+        print(f'There are: {len(hotels)} hotels.')
 
+        hotels_list = []
         for hotel in hotels:
             hotel_dict = {}
 
-            try:
-                hotel_dict['name'] = hotel.locator('[data-testid="title"]').inner_text()
-            except:
-                hotel_dict['name'] = 'N/A'
+            title = hotel.locator('[data-testid="title"]')
+            price = hotel.locator('[data-testid="price-and-discounted-price"], [data-testid="price"]')
+            score = hotel.locator('[data-testid="review-score"] >> div').nth(0)
+            review_text = hotel.locator('[data-testid="review-score"] >> div').nth(2)
+            distance = hotel.locator('[data-testid="distance"]')
 
-            try:
-                hotel_dict['price'] = hotel.locator('[data-testid="price-and-discounted-price"]').inner_text()
-            except:
-                hotel_dict['price'] = 'N/A'
+            if title.count() > 0:
+                title_text = title.inner_text().strip()
+                hotel_dict['hotel'] = " ".join(title_text.splitlines())
+            else:
+                hotel_dict['hotel'] = 'N/A'
 
-            try:
-                hotel_dict['score'] = hotel.locator('[data-testid="review-score"] >> div >> nth=0').inner_text()
-            except:
-                hotel_dict['score'] = 'N/A'
-
-            try:
-                hotel_dict['reviews'] = hotel.locator('[data-testid="review-score"] >> div >> nth=2').inner_text()
-            except:
-                hotel_dict['reviews'] = 'N/A'
-
-            try:
-                hotel_dict['distance'] = hotel.locator('[data-testid="distance"]').inner_text()
-            except:
-                hotel_dict['distance'] = 'N/A'
+            hotel_dict['price'] = price.inner_text().strip() if price.count() > 0 else 'N/A'
+            hotel_dict['score'] = score.inner_text().strip() if score.count() > 0 else 'N/A'
+            hotel_dict['reviews count'] = review_text.inner_text().strip() if review_text.count() > 0 else 'N/A'
+            hotel_dict['distance'] = distance.inner_text().strip() if distance.count() > 0 else 'N/A'
 
             hotels_list.append(hotel_dict)
 
+        df = pd.DataFrame(hotels_list)
+        df.to_excel('hotels_list.xlsx', index=False)
+        df.to_csv('hotels_list.csv', index=False)
+
         browser.close()
 
-    df = pd.DataFrame(hotels_list)
-
-    # Clean and convert price and score for sorting
-    df['price_clean'] = (
-        df['price']
-        .str.replace(r'[^\d.]', '', regex=True)
-        .replace('', '0')
-        .astype(float)
-    )
-
-    df['score_clean'] = pd.to_numeric(df['score'], errors='coerce').fillna(0)
-
-    # Ask user how to sort
-    sort_by = input("Sort by 'price' or 'score'? ").strip().lower()
-    if sort_by == 'score':
-        df_sorted = df.sort_values(by='score_clean', ascending=False)
-    else:
-        df_sorted = df.sort_values(by='price_clean')
-
-    # Save result
-    filename = f'hotels_{city.lower()}_sorted.csv'
-    df_sorted.to_csv(filename, index=False)
-    print(f"Sorted data saved to {filename}")
 
 if __name__ == '__main__':
     main()
-
-
-
