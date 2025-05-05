@@ -51,7 +51,7 @@ def main():
             hotel_dict['price'] = price.inner_text().strip() if price.count() > 0 else 'N/A'
             hotel_dict['score'] = score.inner_text().strip() if score.count() > 0 else 'N/A'
             hotel_dict['reviews count'] = review_text.inner_text().strip() if review_text.count() > 0 else 'N/A'
-            hotel_dict['distance'] = distance.inner_text().strip() if distance.count() > 0 else 'N/A'
+            hotel_dict['distance'] = distance.inner_text().strip().replace("downtown", "center").replace("Downtown", "center") if distance.count() > 0 else 'N/A'
 
             hotels_list.append(hotel_dict)
 
