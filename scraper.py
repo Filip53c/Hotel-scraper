@@ -16,14 +16,8 @@ def main():
     checkin_date = get_valid_date("Enter check-in date (DD-MM-YYYY): ")
     checkout_date = get_valid_date("Enter check-out date (DD-MM-YYYY): ")
 
-    page_url = (
-        f'https://www.booking.com/searchresults.en-us.html'
-        f'?checkin={checkin_date}&checkout={checkout_date}'
-        f'&selected_currency=EUR&ss={city}&ssne={city}&ssne_untouched={city}'
-        f'&lang=en-us&sb=1&src_elem=sb&src=searchresults'
-        f'&dest_type=city&group_adults=1&no_rooms=1&group_children=0&sb_travel_purpose=leisure'
-    )
-
+    page_url = (f'https://www.booking.com/searchresults.en-us.html?checkin={checkin_date}&checkout={checkout_date}&selected_currency=EUR&ss={city}&ssne={city}&ssne_untouched={city}&lang=en-us&sb=1&src_elem=sb&src=searchresults&dest_type=city&group_adults=1&no_rooms=1&group_children=0&sb_travel_purpose=leisure')
+    
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
