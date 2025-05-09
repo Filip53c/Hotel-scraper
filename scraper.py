@@ -42,11 +42,7 @@ def main():
             review_text = hotel.locator('[data-testid="review-score"] >> div').nth(2)
             distance = hotel.locator('[data-testid="distance"]')
 
-            if title.count() > 0:
-                title_text = title.inner_text().strip()
-                hotel_dict['hotel'] = " ".join(title_text.splitlines())
-            else:
-                hotel_dict['hotel'] = 'N/A'
+            hotel_dict['hotel'] = title.inner_text().strip() if title.count() > 0 else 'N/A'
 
             hotel_dict['price'] = price.inner_text().strip() if price.count() > 0 else 'N/A'
             hotel_dict['score'] = score.inner_text().strip() if score.count() > 0 else 'N/A'
@@ -56,7 +52,6 @@ def main():
             hotels_list.append(hotel_dict)
 
         df = pd.DataFrame(hotels_list)
-        df.to_excel('hotels_list.xlsx', index=False)
         df.to_csv('hotels_list.csv', index=False)
 
         browser.close()
