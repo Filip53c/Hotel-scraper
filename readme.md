@@ -1,6 +1,8 @@
 # Hotel Scraper Project
 
-This is a Python-based web scraper that collects hotel information from Booking.com using playwright and pandas.
+This is a Python-based web scraper that collects hotel information from Booking.com using playwright and pandas. 
+
+Enter name of the city with dates for check-in and check-out and you will get 25 hotels with information on prices, score, review count and distance from city center.
 
 ## Features
 - Extracts hotel names, prices, review scores, and distances.
